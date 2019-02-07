@@ -102,11 +102,11 @@ class PoincareModule(nn.Module):
 		e = self.embeds(inputs)
 		v = Variable(e.narrow(1, 1, e.size(1) - 1), requires_grad=True)
 		u = Variable(e.narrow(1, 0, 1).expand_as(v), requires_grad=True)
-		dists = ps.poincare_distance(u, v)
+		dists = poincare_distance(u, v)
 		return dists
 
 	def loss(self, preds, targets):
 		dist_uv = preds.narrow(1, 0, 1)
 		negs_dist = preds.narrow(1, 1, preds.size(1) - 1)
 		loss = th.log(th.exp(-dist_uv).squeeze()/th.exp(-negs_dist).sum(1))
-		return loss
+		return loss.unsqueeze(1)

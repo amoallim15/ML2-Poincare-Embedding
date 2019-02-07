@@ -15,7 +15,7 @@ path = 'data/data.tsv'
 max_epochs = 10
 num_workers = 6
 dim = 2
-batch_size = 2
+batch_size = 25
 start_lr = 0.1
 final_lr = 0.001
 neg = 10
@@ -36,9 +36,6 @@ data = ps.PoincareDataset(ids, objects, relations, neg)
 model = ps.PoincareModule(len(objects), dim, scale)
 loader = th.utils.data.DataLoader(data, **params)
 
-embeds = nn.Embedding(len(objects), dim, max_norm = 1, sparse = True, scale_grad_by_freq = False)
-embeds.weight.data.uniform_(-scale, scale)
-
 print(ids, objects)
 
 for epoch in range(max_epochs):
@@ -46,9 +43,9 @@ for epoch in range(max_epochs):
 	loss = None
 	for inputs, targets in loader:
 		inputs, targets = inputs.to(device), targets.to(device)
-		e = embeds(inputs)
-		preds = model(e)
+		preds = model(inputs)
 		loss = model.loss(preds, targets)
+		#loss.backward()
 		print(loss)#, th.ones(len(loss)))
 
 
