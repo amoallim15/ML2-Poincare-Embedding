@@ -59,6 +59,10 @@ def poincare_distance(u, v):
 	gamma = 1 + 2 * (u_v / (alpha * beta))
 	return th.log(gamma + th.sqrt(th.pow(gamma, 2) - 1))
 
+def poincare_grad(p, d_p):
+	pass
+
+
 class PoincareDataset(Dataset):
 	def __init__(self, ids, objects, relations, negs, unigram_size=1e8):
 		self.ids = ids
@@ -80,35 +84,39 @@ class PoincareDataset(Dataset):
 			if idx not in self.relations[t.item()]:
 				negids.add(idx)
 		indexes = [t, h] + list(negids)
+		if len(negids) == 0:
+			negids.add(t)
 		while len(indexes) < self.negs + 2:
 			indexes.append(indexes[randint(2, len(negids))])
-		return th.tensor(indexes).long(), th.zeros(1).long()
+		return th.tensor(indexes).long(), th.zeros(1) #.long()
 
-def collate_fn(data):
-	inputs, targets = zip(*data)
-	print(data, 'done')
-	return Variable(th.cat(inputs, 0)), Variable(th.cat(targets, 0))
+#def collate_fn(data):
+#	inputs, targets = zip(*data)
+#	print(data, 'done')
+#	return Variable(th.cat(inputs, 0)), Variable(th.cat(targets, 0))
 	
 class PoincareModule(nn.Module):
 
 	def __init__(self, size, dim, scale):
 		super(PoincareModule, self).__init__()
 		self.lossfn = nn.CrossEntropyLoss(reduction='mean', weight=None)
-		self.embeds = nn.Embedding(size, dim, max_norm = 1, sparse = True, scale_grad_by_freq = False)
+		self.embeds = nn.Embedding(size, dim, max_norm = 1, scale_grad_by_freq = False)
 		self.embeds.weight.data.uniform_(-scale, scale)
 		pass
 
 	def forward(self, inputs):
+		# e = relation vectors x batch_size
 		e = self.embeds(inputs)
-		v = Variable(e.narrow(1, 1, e.size(1) - 1), requires_grad=True)
-		u = Variable(e.narrow(1, 0, 1).expand_as(v), requires_grad=True)
+		v = e.narrow(1, 1, e.size(1) - 1)
+		u = e.narrow(1, 0, 1).expand_as(v)
 		dists = poincare_distance(u, v)
 		return dists
 
 	def loss(self, preds, targets):
-		#dist_uv = preds.narrow(1, 0, 1)
-		#negs_dist = preds.narrow(1, 1, preds.size(1) - 1)
-		#loss = th.log(th.exp(-dist_uv).squeeze()/th.exp(-negs_dist).sum(1)).unsqueeze(1)
-		loss = self.lossfn(preds, targets.squeeze(1))
+		dist_uv = preds.narrow(1, 0, 1)
+		negs_dist = preds.narrow(1, 1, preds.size(1) - 1)
+		loss = -1 * th.log(th.exp(-1 * dist_uv).squeeze()/th.exp(-1 * negs_dist).sum(1)).unsqueeze(1).mean()
+		#print(loss)
+		#loss2 = self.lossfn(preds, targets.squeeze(1).long())
+		#print(loss2)
 		return loss
-		#return loss
