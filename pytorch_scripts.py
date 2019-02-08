@@ -106,7 +106,9 @@ class PoincareModule(nn.Module):
 		return dists
 
 	def loss(self, preds, targets):
-		dist_uv = preds.narrow(1, 0, 1)
-		negs_dist = preds.narrow(1, 1, preds.size(1) - 1)
-		loss = th.log(th.exp(-dist_uv).squeeze()/th.exp(-negs_dist).sum(1))
-		return loss.unsqueeze(1)
+		#dist_uv = preds.narrow(1, 0, 1)
+		#negs_dist = preds.narrow(1, 1, preds.size(1) - 1)
+		#loss = th.log(th.exp(-dist_uv).squeeze()/th.exp(-negs_dist).sum(1)).unsqueeze(1)
+		loss = self.lossfn(preds, targets.squeeze(1))
+		return loss
+		#return loss

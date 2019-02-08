@@ -2,6 +2,7 @@ import torch as th
 from torch import nn
 import torch.optim as optim
 import pytorch_scripts as ps
+import rsgd
 import timeit
 import torch.optim as optim
 from torch.autograd import Variable
@@ -14,13 +15,13 @@ targets = ps.get_target('brown')
 path = 'data/data.tsv'
 max_epochs = 10
 num_workers = 6
-dim = 2
-batch_size = 25
+dim = 3
+batch_size = 2
 start_lr = 0.1
 final_lr = 0.001
 neg = 10
 scale = 0.001
-
+lr = 0.5
 #ps.downloadNLTK()
 #ps.generate_synsets(targets, path)
 
@@ -36,18 +37,29 @@ data = ps.PoincareDataset(ids, objects, relations, neg)
 model = ps.PoincareModule(len(objects), dim, scale)
 loader = th.utils.data.DataLoader(data, **params)
 
-print(ids, objects)
+#print(ids, objects)
+
+optimizer = rsgd.RiemannianSGD(
+	model.parameters(),
+	rgrad = rsgd.poincare_grad,
+	retraction = rsgd.euclidean_retraction,
+	lr = lr,
+)
 
 for epoch in range(max_epochs):
 	epoch_loss = []
 	loss = None
 	for inputs, targets in loader:
-		inputs, targets = inputs.to(device), targets.to(device)
+		#inputs, targets = inputs.to(device), targets.to(device)
 		preds = model(inputs)
 		loss = model.loss(preds, targets)
-		#loss.backward()
-		print(loss)#, th.ones(len(loss)))
+		loss.backward()
+		optimizer.step(lr = lr)
+		epoch_loss.append(loss.item())
+		#print(loss)#, th.ones(len(loss)))
+	#print(epoch_loss)
 
-
+for i in model.state_dict():
+	print(model.state_dict()[i])
 
 
