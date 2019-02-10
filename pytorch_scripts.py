@@ -5,9 +5,8 @@ from collections import defaultdict as ddict
 from itertools import count
 import torch as th
 from torch import nn
-from torch.autograd import Function, Variable
 from torch.utils.data import Dataset
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plot
 
 def downloadNLTK():
 	nltk.download('wordnet')
@@ -46,17 +45,32 @@ def get_data(fname):
 		relations[enames[i]][enames[j]] = True
 	ids = th.LongTensor(rows)
 	objects = dict(enames)
-	print('data: objects={0}, edges={1}'.format(len(objects), len(ids)))
 	return ids, objects, relations
 
+def plot_graph(objects, embeds, eps):
+	fig = plot.figure(figsize = (5,5))
+	ax = plot.gca()
+	ax.cla()
+	circle = plot.Circle((0,0), 1., color='black', fill=False)
+	ax.add_artist(circle)
+	ax.set_xlim((-1.1, 1.1))
+	ax.set_ylim((-1.1, 1.1))
+	for key in objects:
+		v = embeds(th.tensor(objects[key]))
+		x, y = v.data[0].item(), v.data[1].item()
+		ax.plot(x, y, 'o', color = 'black')
+		ax.text(x + eps, y + eps, key, color = 'b')
+	plot.show()
+
 class PoincareDataset(Dataset):
+
 	def __init__(self, ids, objects, relations, negs, unigram_size=1e8):
 		self.ids = ids
 		self.objects = objects
 		self.negs = negs
 		self.max_tries = self.negs * 10
 		self.relations = relations
-		pass
+
 	def __len__(self):
 		return len(self.ids)
 
@@ -80,7 +94,7 @@ class PoincareModule(nn.Module):
 
 	def __init__(self, size, dim, scale, lr, eps):
 		super(PoincareModule, self).__init__()
-		self.lossfn = nn.CrossEntropyLoss(reduction='mean', weight=None)
+		#self.lossfn = nn.CrossEntropyLoss(reduction='mean', weight=None)
 		self.embeds = nn.Embedding(size, dim, max_norm = 1, scale_grad_by_freq = False)
 		self.embeds.weight.data.uniform_(-scale, scale)
 		self.lr = lr
@@ -88,7 +102,6 @@ class PoincareModule(nn.Module):
 		pass
 
 	def forward(self, inputs):
-		# e = relation vectors x batch_size
 		e = self.embeds(inputs)
 		v = e.narrow(1, 1, e.size(1) - 1)
 		u = e.narrow(1, 0, 1).expand_as(v)
