@@ -5,7 +5,7 @@ import timeit, os.path
 use_cuda = th.cuda.is_available()
 device = th.device("cuda:0" if use_cuda else "cpu")
 
-word = 'brown'
+word = 'fruit'
 targets = ps.get_target(word)
 path = 'data/{0}.tsv'.format(word)
 max_epochs = 100
@@ -14,8 +14,8 @@ dim = 2
 batch_size = 5
 eps = 1e-5
 neg = 10
-scale = 0.001
-lr = 0.01
+scale = 0.01
+lr = 0.001
 
 params = {
 	'batch_size': batch_size, 
@@ -36,7 +36,7 @@ model = ps.PoincareModule(len(objects), dim, scale, lr, eps)
 loader = th.utils.data.DataLoader(data, **params)
 
 for epoch in range(max_epochs):
-	
+
 	epoch_loss = []
 
 	for inputs, targets in loader:
