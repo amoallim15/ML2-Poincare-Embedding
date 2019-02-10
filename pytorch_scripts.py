@@ -49,20 +49,6 @@ def get_data(fname):
 	print('data: objects={0}, edges={1}'.format(len(objects), len(ids)))
 	return ids, objects, relations
 
-def poincare_distance(u, v):
-	eps = 1e-5
-	uu = th.clamp(th.sum(u * u, dim=-1), 0, 1 - eps)
-	vv = th.clamp(th.sum(v * v, dim=-1), 0, 1 - eps)
-	u_v = th.sum(th.pow(u - v, 2), dim=-1)
-	alpha = 1 - uu
-	beta = 1 - vv
-	gamma = 1 + 2 * (u_v / (alpha * beta))
-	return th.log(gamma + th.sqrt(th.pow(gamma, 2) - 1))
-
-def poincare_grad(p, d_p):
-	pass
-
-
 class PoincareDataset(Dataset):
 	def __init__(self, ids, objects, relations, negs, unigram_size=1e8):
 		self.ids = ids
@@ -90,18 +76,15 @@ class PoincareDataset(Dataset):
 			indexes.append(indexes[randint(2, len(negids))])
 		return th.tensor(indexes).long(), th.zeros(1) #.long()
 
-#def collate_fn(data):
-#	inputs, targets = zip(*data)
-#	print(data, 'done')
-#	return Variable(th.cat(inputs, 0)), Variable(th.cat(targets, 0))
-	
 class PoincareModule(nn.Module):
 
-	def __init__(self, size, dim, scale):
+	def __init__(self, size, dim, scale, lr, eps):
 		super(PoincareModule, self).__init__()
 		self.lossfn = nn.CrossEntropyLoss(reduction='mean', weight=None)
 		self.embeds = nn.Embedding(size, dim, max_norm = 1, scale_grad_by_freq = False)
 		self.embeds.weight.data.uniform_(-scale, scale)
+		self.lr = lr
+		self.eps = eps
 		pass
 
 	def forward(self, inputs):
@@ -109,7 +92,7 @@ class PoincareModule(nn.Module):
 		e = self.embeds(inputs)
 		v = e.narrow(1, 1, e.size(1) - 1)
 		u = e.narrow(1, 0, 1).expand_as(v)
-		dists = poincare_distance(u, v)
+		dists = self.distance(u, v)
 		return dists
 
 	def loss(self, preds, targets):
@@ -120,3 +103,26 @@ class PoincareModule(nn.Module):
 		#loss2 = self.lossfn(preds, targets.squeeze(1).long())
 		#print(loss2)
 		return loss
+
+	def optimize(self):
+		for e in self.parameters():
+			ee = th.sum(e * e, dim = -1, keepdim=True)
+			alpha = 1 - ee
+			beta = -self.lr * e.grad.data * (alpha ** 2 / 4)
+			en = th.norm(e.data)
+			if en >= 1:
+				e.data.add_(beta/en + self.eps) #.expand_as(edx)
+			else:
+				e.data.add_(beta)
+
+	def arcosh(self, x):
+		return th.log(th.clamp(x + th.sqrt(th.clamp(th.pow(x, 2) - 1, min = self.eps)), min = self.eps))
+
+	def distance(self, u, v):
+		uu = th.sum(u * u, dim=-1)
+		vv = th.sum(v * v, dim=-1)
+		u_v = th.sum(th.pow(u - v, 2), dim=-1)
+		alpha = 1 - uu
+		beta = 1 - vv
+		gamma = 1 + 2 * u_v / th.clamp(alpha * beta, min = self.eps)
+		return self.arcosh(gamma)

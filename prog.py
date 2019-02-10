@@ -11,12 +11,11 @@ device = 'cpu'
 
 targets = ps.get_target('brown')
 path = 'data/data.tsv'
-max_epochs = 1
+max_epochs = 100
 num_workers = 6
-dim = 3
-batch_size = 2
-start_lr = 0.1
-final_lr = 0.001
+dim = 5
+batch_size = 5
+eps = 1e-5
 neg = 10
 scale = 0.001
 lr = 0.01
@@ -26,18 +25,13 @@ lr = 0.01
 params = {
 	'batch_size': batch_size, 
 	'shuffle': True, 
-	'num_workers': num_workers,
-	#'collate_fn': ps.collate_fn
+	'num_workers': num_workers
 }
 
 ids, objects, relations = ps.get_data(path)
 data = ps.PoincareDataset(ids, objects, relations, neg)
-model = ps.PoincareModule(len(objects), dim, scale)
+model = ps.PoincareModule(len(objects), dim, scale, lr, eps)
 loader = th.utils.data.DataLoader(data, **params)
-
-#embeds = nn.Embedding(len(objects), dim, max_norm = 1, sparse = True, scale_grad_by_freq = False)
-#embeds.weight.data.uniform_(-scale, scale)
-#print(ids, objects)
 
 for epoch in range(max_epochs):
 	epoch_loss = []
@@ -45,62 +39,14 @@ for epoch in range(max_epochs):
 	# inputs = [v, u, negs ....] ids x batch_size
 	# targets = [0] tensor x batch_size
 	for inputs, targets in loader:
-
-
 		preds = model(inputs)
-		#print(preds, targets)
 		loss = model.loss(preds, targets)
 		loss.backward()
+		model.optimize()
+		epoch_loss.append(loss.data.item())
 
-		for p in model.parameters():
-			d_p = p.grad.data
-			ps.poincare_grad(p, d_p)
+	print('epoch loss: {0}'.format(th.tensor(epoch_loss).mean()))
 
-			print(p)
-			#print(lr, '\n', p.data, '\n', d_p)
-			p.data.add_(-lr, d_p)
-			print('now')
-			print(p)
-
-		#print(list(model.parameters())[0].grad)
-		#print(loss)
-
-
-
-
-
-
-
-
-		#inputs, targets = inputs.to(device), targets.to(device)
-		#preds = model(inputs)
-		#loss = model.loss(preds, targets)
-		#loss.backward()
-		#optimizer.step(lr = lr)
-		#epoch_loss.append(loss.item())
-
-
-
-		#e = embeds(inputs)
-		#v = Variable(e.narrow(1, 1, e.size(1) - 1), requires_grad=True)
-		#u = Variable(e.narrow(1, 0, 1).expand_as(v), requires_grad=True)
-		#dists = ps.poincare_distance(u, v)
-
-		#uv_dist = dists.narrow(1, 0, 1)
-		#negs_dist = dists.narrow(1, 1, dists.size(1) - 1)
-		#loss = th.log(th.exp(-uv_dist).squeeze()/th.exp(-negs_dist).sum(1)).unsqueeze(1)
-		#loss.backward(targets)
-		#epoch_loss
-		#print(v, v.data.grad)
-		#print(e)
-		
-		#print(e)
-		#for i in model.state_dict():
-		#	print(model.state_dict()[i])
-		#print(loss)#, th.ones(len(loss)))
-	#print(epoch_loss)
-
-#for i in model.state_dict():
-#	print(model.state_dict()[i])
+print('embedding vectors:\n{0}'.format(model.embeds.weight))
 
 
