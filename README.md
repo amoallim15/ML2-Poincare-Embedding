@@ -23,3 +23,5 @@ This locality property of the Poincare distance is key for finding continous
 The model achives this by defining a loss function that minimizes the distance between connected words and maximizing the distances between unconnected words.
 and then training over the list of connected nodes, along with randomly sampled negative examples, using gradient descent.
 
+
+to be continued..
