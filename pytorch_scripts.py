@@ -124,7 +124,7 @@ class PoincareModule(nn.Module):
 			beta = -self.lr * e.grad.data * (alpha ** 2 / 4)
 			en = th.norm(e.data)
 			if en >= 1:
-				e.data.add_(beta/en + self.eps) #.expand_as(edx)
+				e.data.add_(beta/en + self.eps)
 			else:
 				e.data.add_(beta)
 
