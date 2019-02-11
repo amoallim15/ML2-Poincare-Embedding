@@ -12,6 +12,9 @@ The reason presented for this is that hyperbolic spaces are more suitable for ca
 ### Distance Function
 
 The model calculates the distances between two words' vectors using the following fuction:
+
+![distance function](imgs/001.png "distance function")
+
 Where:
 	u, v are multi-dimentional vectors of any two words in the dataset.
 
