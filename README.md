@@ -87,14 +87,14 @@ Setting the follwing variable as it shown below, will generate a similar result 
 ```
 	word = 'brown'
 ```
-![brown](imgs/002.PNG "brown")
+![brown](imgs/002.png "brown")
 
 
 2. Example (B)
 ```
 	word = 'fruit'
 ```
-![fruit](imgs/003.PNG "fruit")
+![fruit](imgs/003.png "fruit")
 
 ##Contributors
 
@@ -103,5 +103,3 @@ Setting the follwing variable as it shown below, will generate a similar result 
 ## License
 
 GNU GENERAL PUBLIC LICENSE
-
-
