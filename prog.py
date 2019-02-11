@@ -2,8 +2,8 @@ import torch as th
 import pytorch_scripts as ps
 import timeit, os.path
 
-use_cuda = th.cuda.is_available()
-device = th.device("cuda:0" if use_cuda else "cpu")
+#use_cuda = th.cuda.is_available()
+#device = th.device("cuda:0" if use_cuda else "cpu")
 
 word = 'fruit'
 targets = ps.get_target(word)
