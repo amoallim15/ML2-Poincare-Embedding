@@ -61,7 +61,7 @@ where:
 This repository contains the following:
 
 1. [Poincaré embeddings for learning hierarchical representations paper](Poincare_Embedings_for_Learning_Hierarchical_Representation.pdf)
-2. Sample data to train **<em>data/*.tsv</em>**
+2. Sample data to train at **<em>data/*.tsv</em>**
 3. implementation codebase **<em>pytorch_scripts.py</em>** and **<em>prog.py</em>**
 
 
