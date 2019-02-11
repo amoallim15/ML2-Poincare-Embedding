@@ -96,7 +96,7 @@ Setting the follwing variable as it shown below, will generate a similar result 
 ```
 ![fruit](imgs/003.png "fruit")
 
-##Contributors
+## Contributors
 
 [Ali Moallim](mailto:axj.159@gmail.com)
 
