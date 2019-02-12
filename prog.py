@@ -2,8 +2,8 @@ import torch as th
 import pytorch_scripts as ps
 import timeit, os.path
 
-#use_cuda = th.cuda.is_available()
-#device = th.device("cuda:0" if use_cuda else "cpu")
+use_cuda = th.cuda.is_available()
+device = th.device("cuda:0" if use_cuda else "cpu")
 
 word = 'fruit'
 targets = ps.get_target(word)
@@ -23,35 +23,41 @@ params = {
 	'num_workers': num_workers
 }
 
-if os.path.isfile(path) == False:
-	ps.downloadNLTK()
-	ps.generate_synsets(targets, path)
+def train():
 
-ids, objects, relations = ps.get_data(path)
+	if os.path.isfile(path) == False:
+		ps.downloadNLTK()
+		ps.generate_synsets(targets, path)
 
-print('data: objects={0}, edges={1}'.format(len(objects), len(ids)))
+	ids, objects, relations = ps.get_data(path)
 
-data = ps.PoincareDataset(ids, objects, relations, neg)
-model = ps.PoincareModule(len(objects), dim, scale, lr, eps)
-loader = th.utils.data.DataLoader(data, **params)
+	print('data: objects={0}, edges={1}'.format(len(objects), len(ids)))
 
-for epoch in range(max_epochs):
+	data = ps.PoincareDataset(ids, objects, relations, neg)
+	model = ps.PoincareModule(len(objects), dim, scale, lr, eps)
+	loader = th.utils.data.DataLoader(data, **params)
 
-	epoch_loss = []
+	for epoch in range(max_epochs):
 
-	for inputs, targets in loader:
-		preds = model(inputs)
-		loss = model.loss(preds, targets)
-		loss.backward()
-		model.optimize()
-		epoch_loss.append(loss.data.item())
+		epoch_loss = []
 
-	print('epoch loss: {0}'.format(th.tensor(epoch_loss).mean()))
+		for inputs, targets in loader:
+			inputs, targets = inputs.to(device), targets.to(device)
+			preds = model(inputs)
+			loss = model.loss(preds, targets)
+			loss.backward()
+			model.optimize()
+			epoch_loss.append(loss.data.item())
 
-print('\nobjects:\n{0}'.format(objects))
-print('\nids:\n{0}'.format(ids))
-print('\nembedding vectors:\n{0}'.format(model.embeds.weight))
+		print('epoch loss: {0}'.format(th.tensor(epoch_loss).mean()))
 
-ps.plot_graph(objects, model.embeds, eps)
+	print('\nobjects:\n{0}'.format(objects))
+	print('\nids:\n{0}'.format(ids))
+	print('\nembedding vectors:\n{0}'.format(model.embeds.weight))
+
+	ps.plot_graph(objects, model.embeds, eps)
 
 
+if __name__ == '__main__':
+	th.multiprocessing.freeze_support()
+	train()
