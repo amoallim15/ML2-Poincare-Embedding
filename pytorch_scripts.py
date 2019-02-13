@@ -27,7 +27,6 @@ def generate_synsets(targets, fname):
 	with open(fname, 'w') as fout:
 		for i, j in edges:
 			fout.write('{0}\t{1}\n'.format(i, j))
-	pass
 
 def iter_line(fname):
 	with open(fname, 'r') as fin:
